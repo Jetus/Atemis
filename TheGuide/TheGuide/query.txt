@@ -1,0 +1,16 @@
+
+CREATE TABLE [dbo].[Guide_Pages](
+	[cp_id] [int] IDENTITY(1,1) NOT NULL,
+	[cp_parentid] [int] NOT NULL,
+	[cp_name] [nvarchar](100) NOT NULL,
+	[cp_text] [ntext] NOT NULL,
+	[cp_title] [nvarchar](255) NOT NULL,
+	[cp_description] [nvarchar](500) NOT NULL,
+	[cp_keywords] [nvarchar](500) NOT NULL,
+	[cp_orderno] [int] NOT NULL,
+	[cp_externalurl] [nvarchar](500) NULL,
+	[cp_IsValid] [bit] NOT NULL,
+	[clg_id] [int] NOT NULL,
+	[cm_id] [int] NULL,
+	[cp_modif_date] [datetime] NULL,
+	[parent_id] [int] NULL)
