@@ -1,0 +1,115 @@
+   public string AddNewUser(string lastname, string firstname, string email, string address, int city_id, int country_id, int position_id, string password, string sex,
+                             string birthdate, string photo, string tel, int cl_id, int otype)
+    {
+        string result = "FAIL";
+
+        string clean_firstname = firstname.Replace("'", "`");
+        string clean_lastname = lastname.Replace("'", "`");
+        string encrypted_password = COM.Crypting.Encrypt(password);
+        string cityId = city_id == 0 ? "NULL" : city_id.ToString();
+        string positionId = position_id == 0 ? "NULL" : position_id.ToString();
+        string countryId = country_id == 0 ? "NULL" : country_id.ToString();
+
+        string commandQuery = "";
+
+       
+            commandQuery = "INSERT INTO crm_contact (cnt_firstname,cnt_lastname,cnt_email,cnt_password,cnt_sex,cnt_birth,d_country_id, d_city_id, cnt_put_date, cnt_put, cnt_img, pos_id, cl_id) VALUES (N'" +
+                clean_firstname + "',N'" + clean_lastname + "','" + email + "','" + encrypted_password + "'," + sex + ", " + (String.IsNullOrEmpty(birthdate) ? "NULL" : "CONVERT(DATETIME, '" + birthdate + "', 101)") + ", " +
+                countryId + "," + cityId + ", getdate(),1, '" + photo + "', " + positionId + ", " + cl_id + ")";
+       
+
+        try
+        {
+            conn.Open();
+            SqlCommand comm = new SqlCommand(commandQuery, conn);
+            if (Verify())
+            {
+                comm.ExecuteNonQuery();
+
+                SqlCommand cmd = new SqlCommand();
+                SqlDataReader reader;
+                cmd.Connection = conn;
+
+                    cmd.CommandText = "select max(cnt_id) as LastId from CRM_contact";
+                
+                cmd.CommandType = CommandType.Text;
+                reader = cmd.ExecuteReader();
+                if (reader.Read())
+                    result = reader["LastId"].ToString();
+                reader.Close();
+
+                conn.Close();
+                
+                result = result;
+                Logger.Info("AddNewUser;lastname=" + lastname + ";firstname=" + firstname + ";email=" + email);
+            }
+            else
+                result = "FAIL not verified";
+
+            conn.Close();
+        }
+        catch (Exception ex)
+        {
+            result = "FAIL " + ex.Message;
+        }
+
+
+ public string AddNewCompany(string cl_name, string cl_street, string cl_zip, int city, int country, int ssector, string website, string tel, string openingHours, string logoName, string cl_x, string cl_y, int empid)
+    {
+        string result = "FAIL";
+
+        string clean_cl_name = cl_name.Replace("'", "`");
+        string clean_openingHours = openingHours.Replace("'", "`");
+        string clean_logoName = logoName.Replace("'", "`");
+
+        string commandQuery = "";
+
+        commandQuery = "Insert into crm_client (cl_name,cl_street,cl_zip,d_country_id,d_city_id,cl_website,ssector_id, cl_put) Values (N'" + clean_cl_name + "', N'" + cl_street + "', '" + cl_zip + "', " + country + ", " + city + ", '" + website + "', " + ssector + ", " +empid +" )";
+        commandQuery += " DECLARE @clientId AS INT";
+        commandQuery += " SET @clientId = @@IDENTITY";
+
+        commandQuery += " Insert into maps_coordinates (mc_x, mc_y, mc_target, mc_type) values ('"+cl_x+"','"+ cl_y+"', @clientId,1) ";
+
+        if (!string.IsNullOrEmpty(tel))
+            commandQuery += " INSERT INTO CRM_client_tel (cl_id, cltel_nr) VALUES (@clientId, '"+ tel+"')";
+
+
+        if (!String.IsNullOrEmpty(clean_openingHours))
+            commandQuery += " INSERT INTO crm_element_client (cl_id, elem_id, le_value) VALUES (@clientId, 92, N'" + clean_openingHours + "')";
+
+        if (!String.IsNullOrEmpty(clean_logoName))
+            commandQuery += " INSERT INTO CRM_client_logo (cl_id, logo_name) VALUES (@clientId, N'" + clean_logoName + "')";
+
+        try
+        {
+            if (Verify())
+            {
+                conn.Open();
+                SqlCommand comm = new SqlCommand(commandQuery, conn);
+
+                comm.ExecuteNonQuery();
+
+                SqlCommand cmd = new SqlCommand();
+                SqlDataReader reader;
+                cmd.Connection = conn;
+                cmd.CommandText = "select max(cl_id) as LastId from CRM_client";
+                cmd.CommandType = CommandType.Text;
+                reader = cmd.ExecuteReader();
+                if (reader.Read())
+                    result = reader["LastId"].ToString();
+                reader.Close();
+
+                conn.Close();
+                Logger.Info("AddNewCompany;cl_name=" + cl_name + ";cl_street=" + cl_street + ";cl_zip=" + cl_zip + ";city=" + city + ";country=" + country);
+            }
+            else
+                result = "FAIL Not verified";
+        }
+        catch (Exception ex)
+        {
+            result = "FAIL " + ex.Message;
+        }
+
+        return result;
+    }
+

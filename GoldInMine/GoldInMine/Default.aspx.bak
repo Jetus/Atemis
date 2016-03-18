@@ -418,12 +418,8 @@
 			<div class="container">
 			
 				<h1 class="section-title scrollimation scale-in">Pre-register</h1>
-
-                <div class="row" id="divWelcomeForm" style="display: none;">
-                    <h2>Thanks for your registration</h2>
-                </div>
 				
-				<div class="row" id="divRegistrationForm">
+				<div class="row">
 				
 					<div class="col-sm-5 contact-info scrollimation fade-right">
 						
@@ -490,23 +486,21 @@
 									<RequiredField IsRequired="True" ErrorText="Please enter your phone number" />
 								</ValidationSettings>
 							</dx:ASPxTextBox>
-                          </div>
-						</div>
+						  </div>
 						  
 						<div class="form-group">
 							<label class="control-label">Position</label>
 							<div class="controls">
-							    <i class="fa fa-user"></i>
-							    <dx:ASPxComboBox runat="server" ID="tbCPosition" ClientInstanceName="tbCPosition" NullText="Position" CssClass="form-control input-lg requiredField"
-								    IncrementalFilteringMode="StartsWith" DropDownStyle="DropDownList" EnableSynchronization="False"
-								    TextField="pos_name"
-								    ValueField="pos_id"
-								    ValueType="System.Int32">
-								    <ValidationSettings Display="Static" ErrorDisplayMode="ImageWithTooltip" ValidationGroup="CreateContact">
-									    <RequiredField IsRequired="True" ErrorText="Please enter your position" />
-								    </ValidationSettings>
-							    </dx:ASPxComboBox>
-                            </div>	
+							<i class="fa fa-user"></i>
+							<dx:ASPxComboBox runat="server" ID="tbCPosition" ClientInstanceName="tbCPosition" NullText="Position" CssClass="form-control input-lg requiredField"
+								IncrementalFilteringMode="StartsWith" DropDownStyle="DropDownList" EnableSynchronization="False"
+								TextField="pos_name"
+								ValueField="pos_id"
+								ValueType="System.Int32">
+								<ValidationSettings Display="Static" ErrorDisplayMode="ImageWithTooltip" ValidationGroup="CreateContact">
+									<RequiredField IsRequired="True" ErrorText="Please enter your position" />
+								</ValidationSettings>
+							</dx:ASPxComboBox>
 						</div>					
 						
 						<div class="form-group">
@@ -520,7 +514,7 @@
 							    </dx:ASPxMemo>
 							</div>
 						</div><!-- End textarea -->
-					</div> <!-- End Form group -->
+						
 						
 						
 						
@@ -694,8 +688,7 @@
             <ClientSideEvents CallbackComplete="
                 function(s, e) {
                     if (e.result == 'OK') {
-                        $('#divRegistrationForm').hide();
-                        $('#divWelcomeForm').show();
+                        alert('Registered!');
                     }
                     else {
                         alert(e.result);
@@ -794,7 +787,7 @@
     public string AddNewUser(string lastname, string firstname, string email, string address, int city_id, int country_id, int position_id, string password, string sex,
                           string birthdate, string photo, string tel, int cl_id, int otype)
     {
-        string result = "FAIL";
+        string result = "FAIL (user creation)";
 
         string clean_firstname = firstname.Replace("'", "`");
         string clean_lastname = lastname.Replace("'", "`");
@@ -809,14 +802,10 @@
         commandQuery = "INSERT INTO crm_contact (cnt_firstname,cnt_lastname,cnt_email,cnt_password,cnt_sex,cnt_birth,d_country_id, d_city_id, cnt_put_date, cnt_put, cnt_img, pos_id, cl_id) VALUES (N'" +
             clean_firstname + "',N'" + clean_lastname + "','" + email + "','" + encrypted_password + "'," + sex + ", " + (String.IsNullOrEmpty(birthdate) ? "NULL" : "CONVERT(DATETIME, '" + birthdate + "', 101)") + ", " +
             countryId + "," + cityId + ", getdate(),1, '" + photo + "', " + positionId + ", " + cl_id + ")";
-		commandQuery += " DECLARE @contactId AS INT";
-        commandQuery += " SET @contactId = @@IDENTITY";
-		
-		 if (!string.IsNullOrEmpty(tel))
-            commandQuery += " INSERT INTO CRM_contact_tel (cnt_id, cnttel_nr) VALUES (@contactId, '"+ tel+"')";
-			
-		 SqlConnection conn = new SqlConnection(COM.Connections.ConStr);
-		 try
+
+
+        SqlConnection conn = new SqlConnection(COM.Connections.ConStr);
+        try
         {
             conn.Open();
             SqlCommand comm = new SqlCommand(commandQuery, conn);
@@ -838,24 +827,38 @@
         }
         catch (Exception ex)
         {
-            result = "FAIL " + ex.Message + " (Contact creation)";
+            result = "FAIL " + ex.Message + " (user creation)";
         }
-
         return result;
     }
- 
 
     public string AddNewCompany(string cl_name, string cl_street, string cl_zip, int city, int country, int ssector, string website, string tel, string openingHours, string logoName, string cl_x, string cl_y, int empid)
     {
-        string result = "OK";
+        string result = "FAIL (Company creation)";
 
         string clean_cl_name = cl_name.Replace("'", "`");
-       
+        string clean_openingHours = openingHours.Replace("'", "`");
+        string clean_logoName = logoName.Replace("'", "`");
+
         string commandQuery = "";
 
-        commandQuery = "Insert into crm_client (cl_name,d_country_id,d_city_id,ssector_id, cl_put, cl_old) Values (N'" + clean_cl_name + "', " + country + ", " + city + ",  " + ssector + ", 1 ,0)";
+        commandQuery = "Insert into crm_client (cl_name,cl_street,cl_zip,d_country_id,d_city_id,cl_website,ssector_id, cl_put) Values (N'" + clean_cl_name + "', N'" + cl_street + "', '" + cl_zip + "', " + country + ", " + city + ", '" + website + "', " + ssector + ", " +empid +" )";
+        commandQuery += " DECLARE @clientId AS INT";
+        commandQuery += " SET @clientId = @@IDENTITY";
+
+        commandQuery += " Insert into maps_coordinates (mc_x, mc_y, mc_target, mc_type) values ('"+cl_x+"','"+ cl_y+"', @clientId,1) ";
+
+        if (!string.IsNullOrEmpty(tel))
+            commandQuery += " INSERT INTO CRM_client_tel (cl_id, cltel_nr) VALUES (@clientId, '"+ tel+"')";
+
+
+        if (!String.IsNullOrEmpty(clean_openingHours))
+            commandQuery += " INSERT INTO crm_element_client (cl_id, elem_id, le_value) VALUES (@clientId, 92, N'" + clean_openingHours + "')";
+
+        if (!String.IsNullOrEmpty(clean_logoName))
+            commandQuery += " INSERT INTO CRM_client_logo (cl_id, logo_name) VALUES (@clientId, N'" + clean_logoName + "')";
+
         SqlConnection conn = new SqlConnection(COM.Connections.ConStr);
-		
         try
         {
             conn.Open();
@@ -882,7 +885,5 @@
 
         return result;
     }
-
-       
 
 </script>
